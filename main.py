@@ -1,15 +1,33 @@
-from modules.bangumidata.bangumidata import *
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 
+@asynccontextmanager
+async def lifespan(App: FastAPI):
+    initRouter()
+    yield
+    
+App = FastAPI(lifespan=lifespan)
 
-url = "https://unpkg.com/bangumi-data@0.3/dist/data.json"
+App.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-directory: str = "data/cache"
-filename: str = "bangumidata.json"
-date='20240701'
+Config = uvicorn.Config(App, host="0.0.0.0", port=8964, log_level="info", reload=False,)
 
-items = BangumiData.getAnimeByQuarterAndYear('2024',QUARTER.WINTER)
+Server = uvicorn.Server(Config)
 
-for item in items:
-    print(item.titleTranslate.get(LANGUAGE_ZH_HANS, item.title), item.begin)
 
+def initRouter():
+    from api.api import api_router
+    App.include_router(api_router, prefix="/api/v1")
+    
+        
+if __name__ == '__main__':
+    Server.run()

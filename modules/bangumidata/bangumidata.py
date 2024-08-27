@@ -1,10 +1,9 @@
-import requests, json, os  # type: ignore
+import requests, json, os # type: ignore
 from typing import Optional
-
-from modules.bangumidata.schema import *
+from modules.schema.bangumidata import *
 from utils.date import yyyymmdd_to_iso
 from modules.bangumidata import *
-
+from fuzzywuzzy import fuzz
 
 class BangumiData:
 
@@ -115,3 +114,18 @@ class BangumiData:
             )
         except Exception as e:
             LOG_ERROR(f"getAnimeByQuarterAndYear", e)
+
+    @staticmethod
+    def getAnimeByTitle(title: str) -> Item:
+        """
+        根据title匹配条目
+        """
+        try:
+            items = []
+            for item in BangumiData.loadData().items:
+                titles = [t for v in item.titleTranslate.values() for t in v]
+                if any(fuzz.partial_ratio(title.lower(), t.lower()) > 80 for t in titles):
+                    items.append(item)
+            return items
+        except Exception as e:
+            LOG_ERROR(f"getAnimeByTitle", e)
