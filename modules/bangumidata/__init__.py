@@ -1,4 +1,4 @@
-from enum import Enum
+from modules.schema import QUARTER
 from core.log import LOG_INFO, LOG_ERROR
 
 DIRECTORY: str = "data/cache"
@@ -7,11 +7,7 @@ URL: str = "https://unpkg.com/bangumi-data@0.3/dist/data.json"
 
 
 
-class QUARTER(Enum):
-    WINTER = '01'
-    SPRING = '04'
-    SUMMER = '07'
-    AUTUMN = '10'
+
     
       
 def get_next_quarter(current_quarter: QUARTER) -> QUARTER:

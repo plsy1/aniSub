@@ -116,7 +116,7 @@ class BangumiData:
             LOG_ERROR(f"getAnimeByQuarterAndYear", e)
 
     @staticmethod
-    def getAnimeByTitle(title: str) -> Item:
+    def getAnimeByTitle(title: str) -> List[Item]:
         """
         根据title匹配条目
         """
