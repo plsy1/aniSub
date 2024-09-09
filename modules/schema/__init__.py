@@ -6,7 +6,7 @@ class QUARTER(Enum):
     SUMMER = '07'
     AUTUMN = '10'
     
-class Weekday(Enum):
+class WEEKDAY(Enum):
     SATURDAY = 0
     SUNDAY = 1
     MONDAY = 2

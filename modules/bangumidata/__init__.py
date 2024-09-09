@@ -1,14 +1,9 @@
 from modules.schema import QUARTER
 from core.log import LOG_INFO, LOG_ERROR
 
-DIRECTORY: str = "data/cache"
+DIRECTORY: str = "data"
 FILENAME: str = "bangumidata.json"
 URL: str = "https://unpkg.com/bangumi-data@0.3/dist/data.json"
-
-
-
-
-    
       
 def get_next_quarter(current_quarter: QUARTER) -> QUARTER:
     quarters = list(QUARTER)

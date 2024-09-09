@@ -1,6 +1,6 @@
 from datetime import datetime
 from core.log import LOG_INFO, LOG_ERROR
-from modules.schema import Weekday
+from modules.schema import WEEKDAY
 
 def yyyymmdd_to_iso(yyyymmdd: str) -> str:
     """
@@ -34,7 +34,7 @@ def get_weekday_by_iso_date(iso_date: str) -> str:
 
     h = (day + (13 * (month + 1)) // 5 + K + K // 4 + J // 4 + 5 * J) % 7
 
-    return Weekday(h).value
+    return WEEKDAY(h).value
 
 
 def get_weekday_by_yyyymmdd(yyyymmdd: str) -> str:

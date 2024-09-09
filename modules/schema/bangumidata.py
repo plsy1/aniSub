@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 from dataclasses import dataclass
 
 
@@ -35,13 +35,13 @@ class SiteMeta:
 @dataclass
 class OnairSite:
     site: str
-    id: str
-    begin: str
-    regions: List[str]
-    url: str = None
-    broadcast: str = None
-    end: str = None
-    comment: str = None
+    id: Optional[str] = None
+    begin: Optional[str] = None
+    regions: Optional[List[str]] = None
+    url: Optional[str] = None
+    broadcast: Optional[str] = None
+    end: Optional[str] = None
+    comment: Optional[str] = None
 
 
 @dataclass
