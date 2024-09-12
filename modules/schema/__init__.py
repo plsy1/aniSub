@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum,IntEnum
 
 class QUARTER(Enum):
     WINTER = '01'
@@ -6,7 +6,7 @@ class QUARTER(Enum):
     SUMMER = '07'
     AUTUMN = '10'
     
-class WEEKDAY(Enum):
+class WEEKDAY(IntEnum):
     SATURDAY = 0
     SUNDAY = 1
     MONDAY = 2

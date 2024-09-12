@@ -2,11 +2,18 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from core.database import Database
+from modules.bangumidata.bangumidata import *
 
 
 @asynccontextmanager
 async def lifespan(App: FastAPI):
     initRouter()
+    if not os.path.exists("data"):
+        os.makedirs("data")
+        Database.init(BangumiData.getFromSource())
+    else:
+        pass
     yield
     
 App = FastAPI(lifespan=lifespan)

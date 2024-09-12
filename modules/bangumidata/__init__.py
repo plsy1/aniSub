@@ -1,4 +1,4 @@
-from modules.schema import QUARTER
+from modules.schema import QUARTER,WEEKDAY
 from core.log import LOG_INFO, LOG_ERROR
 
 DIRECTORY: str = "data"

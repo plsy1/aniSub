@@ -8,10 +8,18 @@ from modules.schema.bangumidata import *
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 
+def match_title(title: str, row: tuple) -> bool:
+    """
+    模糊匹配
+    """
+    item_id = row[0]
+    title_translate = Database._get_title_translate(item_id)
+    return any(fuzz.partial_ratio(title.lower(), t.lower()) > 80 for t in [title for titles in title_translate.values() for title in titles])
+
 class BangumiData:
 
     @staticmethod
-    def get():
+    def getFromSource():
         """从 URL 下载 JSON 数据并保存到指定目录下的 JSON 文件中"""
         try:
 
@@ -30,7 +38,7 @@ class BangumiData:
         try:
             begin_after = yyyymmdd_to_iso(date)
             query = "SELECT * FROM items WHERE begin > ?"
-            rows = Database._query_items(query, (begin_after,))
+            rows = Database._query(query, (begin_after,))
 
             items = []
             for row in rows:
@@ -70,7 +78,7 @@ class BangumiData:
             query = """
             SELECT * FROM items WHERE (begin >= ? AND begin IS NOT NULL) AND (end < ? AND end IS NOT NULL)
             """
-            rows = Database._query_items(query, (begin_after, end_before))
+            rows = Database._query(query, (begin_after, end_before))
             items = []
             for row in rows:
                 item_id = row[0]
@@ -105,7 +113,7 @@ class BangumiData:
         try:
             items = []
             query = "SELECT * FROM items"
-            rows = Database._query_items(query, ())
+            rows = Database._query(query, ())
             with ProcessPoolExecutor() as executor:
                 futures = [executor.submit(match_title, title, row) for row in rows]
                 
@@ -132,12 +140,37 @@ class BangumiData:
             return items
         except Exception as e:
             LOG_ERROR(f"getAnimeByTitle", e)
+            
+    @staticmethod
+    def getAnimeByAirDateAndWeekday(date: str, weekday: WEEKDAY):
+        try:
+            begin_after = yyyymmdd_to_iso(date)
+            query = '''
+                    SELECT * FROM items 
+                    WHERE weekday = ? AND begin > ?
+                    '''
+            rows = Database._query(query,(str(weekday),begin_after))
+            items = []
+            for row in rows:
+                item_id = row[0]
+                title_translate = Database._get_title_translate(item_id)
+                sites = Database._get_sites(item_id)
 
+                item = Item(
+                    title=row[1],
+                    titleTranslate=title_translate,
+                    type=row[2],
+                    lang=row[3],
+                    officialSite=row[4],
+                    begin=row[5],
+                    end=row[6],
+                    sites=sites,
+                    broadcast=row[7],
+                    comment=row[8],
+                )
+                items.append(item)
 
-def match_title(title: str, row: tuple) -> bool:
-    """
-    模糊匹配
-    """
-    item_id = row[0]
-    title_translate = Database._get_title_translate(item_id)
-    return any(fuzz.partial_ratio(title.lower(), t.lower()) > 80 for t in [title for titles in title_translate.values() for title in titles])
+            return items
+
+        except Exception as e:
+                LOG_ERROR(f"getAnimeByAirDateAndWeekday", e)

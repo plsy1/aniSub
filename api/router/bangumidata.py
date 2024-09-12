@@ -1,5 +1,7 @@
 from fastapi import APIRouter,HTTPException # type: ignore
-from modules.bangumidata.bangumidata import *
+from modules.bangumidata.bangumidata import BangumiData
+from modules.schema import QUARTER,WEEKDAY
+from core.log import LOG_ERROR
 import re
 router = APIRouter()
 
@@ -34,4 +36,13 @@ async def func(title: str):
         return BangumiData.getAnimeByTitle(title)
     except Exception as e:
         LOG_ERROR(f"Api getAnimeByTitle", e)
+        raise HTTPException(status_code=500, detail="Server internal error")
+    
+    
+@router.get("/getAnimeByAirDate", summary="date之后开始播出的，星期*放送的剧集")
+async def func(date:str, weekday: WEEKDAY):
+    try:
+        return BangumiData.getAnimeByAirDateAndWeekday(date, weekday)
+    except Exception as e:
+        LOG_ERROR(f"Api getAnimeByAirDate", e)
         raise HTTPException(status_code=500, detail="Server internal error")
