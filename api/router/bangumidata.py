@@ -19,14 +19,12 @@ async def func(year: str, quarter: QUARTER):
         LOG_ERROR(f"Api getAnimeByQuarterAndYear", e)
         raise HTTPException(status_code=500, detail="Server internal error")
         
-@router.get("/getAnimeReleasedAfterGivenDate", summary="返回开播时间晚于date的条目，date格式yyyymmdd")
-async def func(date: str):
-    if not re.fullmatch(r"\d{8}", date):
-        raise HTTPException(status_code=400, detail="Invalid field: date")
+@router.get("/getThisSeason", summary="返回本季新番")
+async def func():
     try:
-        return BangumiData.getAnimeReleasedAfterGivenDate(date)
+        return BangumiData.getThisSeason()
     except Exception as e:
-        LOG_ERROR(f"Api getAnimeReleasedAfterGivenDate", e)
+        LOG_ERROR(f"Api getThisSeason", e)
         raise HTTPException(status_code=500, detail="Server internal error")
     
     
@@ -46,3 +44,17 @@ async def func(date:str, weekday: WEEKDAY):
     except Exception as e:
         LOG_ERROR(f"Api getAnimeByAirDate", e)
         raise HTTPException(status_code=500, detail="Server internal error")
+    
+    
+    
+@router.get("/getImageLinkByBangumiID", summary="根据bangumi.tv的subjectID，返回对应的图片URL")
+async def func(subjectID:str):
+    try:
+         response = await BangumiData.getImageByBangumiID(subjectID)
+         if response is not None:
+            return {"status": "true"}
+         return {"status": "false"}
+    except Exception as e:
+        LOG_ERROR(f"Api getImageLinkByBangumiID", e)
+        raise HTTPException(status_code=500, detail="Server internal error")
+    

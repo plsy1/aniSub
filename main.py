@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from core.database import Database
 from modules.bangumidata.bangumidata import *
+from starlette.staticfiles import StaticFiles
 
 
 @asynccontextmanager
@@ -17,6 +18,8 @@ async def lifespan(App: FastAPI):
     yield
     
 App = FastAPI(lifespan=lifespan)
+
+App.mount("/img", StaticFiles(directory="data/img"), name="img")
 
 App.add_middleware(
     CORSMiddleware,

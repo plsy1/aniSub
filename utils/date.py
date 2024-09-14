@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from core.log import LOG_INFO, LOG_ERROR
 from modules.schema import WEEKDAY
+
 
 def yyyymmdd_to_iso(yyyymmdd: str) -> str:
     """
@@ -46,3 +47,49 @@ def get_weekday_by_yyyymmdd(yyyymmdd: str) -> str:
         return get_weekday_by_iso_date(yyyymmdd_to_iso(yyyymmdd))
     except Exception as e:
         LOG_ERROR(f"get_weekday_by_yyyymmdd", e)
+
+
+def get_nearest_past_date():
+    dates_str = [101, 401, 701, 1001]
+    today = datetime.today().date()
+    today_mmdd = today.month * 100 + today.day
+
+    past_dates = []
+    for date_int in dates_str:
+        month = date_int // 100
+        day = date_int % 100
+        mmdd = month * 100 + day
+
+        if mmdd < today_mmdd:
+            date = datetime(today.year, month, day).date()
+            days_diff = (today - date).days
+            past_dates.append((date_int, days_diff))
+        elif mmdd == today_mmdd:
+
+            past_dates.append((date_int, 0))
+
+    nearest_past_date_int = min(past_dates, key=lambda x: x[1])[0]
+    nearest_past_date = datetime(
+        today.year, nearest_past_date_int // 100, nearest_past_date_int % 100
+    ).strftime("%Y%m%d")
+
+    return nearest_past_date
+
+
+def get_next_season() -> str:
+    input_date = get_nearest_past_date()
+    dates_str = ["0101", "0401", "0701", "1001"]
+    input_year = int(input_date[:4])
+    input_mmdd = int(input_date[4:])
+    dates_str = [int(date) for date in dates_str]
+    future_dates = [date for date in dates_str if date > input_mmdd]
+    if not future_dates:
+        next_date = min(dates_str)
+    else:
+        next_date = min(future_dates)
+    if input_mmdd == 1001:
+        input_year += 1
+
+    next_date_str = f"{input_year}{next_date:04d}"
+
+    return next_date_str

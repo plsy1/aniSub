@@ -161,7 +161,7 @@ cython_debug/
 
 log/
 1.md
-conf/
+config/
 data/
 data.db
 .DS_Store

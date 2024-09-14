@@ -199,7 +199,7 @@ class Database:
 
         sites = []
         for row in rows:
-            site = OnairSite(
+            site = Site(
                 site=row[0],
                 id=row[1],
                 begin=row[2],

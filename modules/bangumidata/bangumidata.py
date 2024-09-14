@@ -6,6 +6,12 @@ from fuzzywuzzy import fuzz
 from core.database import Database as Database
 from modules.schema.bangumidata import *
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from fastapi.responses import FileResponse
+import httpx
+from config import conf
+from utils.date import get_nearest_past_date, get_next_season
+
+bangumi_config = conf.get_bangumi_config()
 
 
 def match_title(title: str, row: tuple) -> bool:
@@ -14,7 +20,11 @@ def match_title(title: str, row: tuple) -> bool:
     """
     item_id = row[0]
     title_translate = Database._get_title_translate(item_id)
-    return any(fuzz.partial_ratio(title.lower(), t.lower()) > 80 for t in [title for titles in title_translate.values() for title in titles])
+    return any(
+        fuzz.partial_ratio(title.lower(), t.lower()) > 80
+        for t in [title for titles in title_translate.values() for title in titles]
+    )
+
 
 class BangumiData:
 
@@ -31,11 +41,11 @@ class BangumiData:
             LOG_ERROR(f"BangumiData", e)
 
     @staticmethod
-    def getAnimeReleasedAfterGivenDate(date: str) -> List[Item]:
+    def getThisSeason() -> List[Item]:
         """
-        返回开播时间晚于date的条目，date格式yyyymmdd
         """
         try:
+            date = get_nearest_past_date()
             begin_after = yyyymmdd_to_iso(date)
             query = "SELECT * FROM items WHERE begin > ?"
             rows = Database._query(query, (begin_after,))
@@ -62,7 +72,7 @@ class BangumiData:
 
             return items
         except Exception as e:
-            LOG_ERROR(f"getAnimeByAirDate", e)
+            LOG_ERROR(f"getThisSeason", e)
 
     @staticmethod
     def getAnimeByQuarterAndYear(year: str, quarter: QUARTER) -> List[Item]:
@@ -104,7 +114,6 @@ class BangumiData:
         except Exception as e:
             LOG_ERROR(f"getAnimeByQuarterAndYear", e)
 
-
     @staticmethod
     def getAnimeByTitle(title: str) -> List[Item]:
         """
@@ -116,7 +125,7 @@ class BangumiData:
             rows = Database._query(query, ())
             with ProcessPoolExecutor() as executor:
                 futures = [executor.submit(match_title, title, row) for row in rows]
-                
+
                 for future in as_completed(futures):
                     if future.result():
                         row = rows[futures.index(future)]
@@ -133,23 +142,23 @@ class BangumiData:
                             end=row[6],
                             sites=sites,
                             broadcast=row[7],
-                            comment=row[8]
+                            comment=row[8],
                         )
                         items.append(item)
 
             return items
         except Exception as e:
             LOG_ERROR(f"getAnimeByTitle", e)
-            
+
     @staticmethod
     def getAnimeByAirDateAndWeekday(date: str, weekday: WEEKDAY):
         try:
             begin_after = yyyymmdd_to_iso(date)
-            query = '''
+            query = """
                     SELECT * FROM items 
                     WHERE weekday = ? AND begin > ?
-                    '''
-            rows = Database._query(query,(str(weekday),begin_after))
+                    """
+            rows = Database._query(query, (str(weekday), begin_after))
             items = []
             for row in rows:
                 item_id = row[0]
@@ -173,4 +182,83 @@ class BangumiData:
             return items
 
         except Exception as e:
-                LOG_ERROR(f"getAnimeByAirDateAndWeekday", e)
+            LOG_ERROR(f"getAnimeByAirDateAndWeekday", e)
+
+    @staticmethod
+    async def getImageByBangumiID(subject_id: str) -> Optional[FileResponse]:
+        img_directory = "data/img"
+        file_path = None
+
+        # 查找本地缓存的图片
+        try:
+            for filename in os.listdir(img_directory):
+                if filename.startswith(f"{subject_id}."):
+                    file_path = os.path.join(img_directory, filename)
+                    if os.path.isfile(file_path):
+                        img_url = f"/img/{filename}"
+                        return True
+        except FileNotFoundError:
+            LOG_INFO("本地无对应封面缓存，尝试下载")
+        except Exception as e:
+            LOG_ERROR(f"Error while checking local cache: {e}")
+
+        async with httpx.AsyncClient() as client:
+            try:
+                baseurl = "https://api.bgm.tv/"
+                headers = {
+                    "accept": "application/json",
+                    "User-Agent": "plsy1/easybangumi (https://github.com/plsy1/easybangumi)",
+                    "Authorization": f"Bearer {bangumi_config.get('token','')}",
+                    'accept': 'application/json',
+                }
+                url = f"{baseurl}v0/subjects/{subject_id}"
+                response = await client.get(url, headers=headers, timeout=30)
+
+                if response.status_code == 200:
+                    json_data = response.json()
+                    img_url = (
+                        json_data.get("images", {}).get("large")
+                        or json_data.get("images", {}).get("medium")
+                        or json_data.get("images", {}).get("small")
+                    )
+                    if img_url:
+                        if not os.path.exists(img_directory):
+                            os.makedirs(img_directory)
+
+                        # Download image with streaming
+                        async with client.stream("GET", img_url) as img_response:
+                            if img_response.status_code == 200:
+                                content_type = img_response.headers.get(
+                                    "Content-Type", ""
+                                )
+                                file_extension = (
+                                    content_type.split("/")[1]
+                                    if "/" in content_type
+                                    else "jpg"
+                                )
+
+                                file_name = f"{subject_id}.{file_extension}"
+                                file_path = os.path.join(img_directory, file_name)
+
+                                with open(file_path, "wb") as file:
+                                    async for chunk in img_response.aiter_bytes(
+                                        chunk_size=8192
+                                    ):
+                                        file.write(chunk)
+
+                                LOG_INFO(f"Image saved as {file_name}")
+                                return True
+                            else:
+                                LOG_ERROR("Failed to download image from URL")
+                    else:
+                        LOG_ERROR("No image URL found in the API response")
+                else:
+                    LOG_ERROR(
+                        f"API request failed with status code {response.status_code}"
+                    )
+            except httpx.RequestError as e:
+                LOG_ERROR(f"Error while downloading image: {e}")
+            except Exception as e:
+                LOG_ERROR(f"Unexpected error: {e}")
+
+        return None

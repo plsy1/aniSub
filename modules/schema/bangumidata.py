@@ -33,7 +33,7 @@ class SiteMeta:
 
 
 @dataclass
-class OnairSite:
+class Site:
     site: str
     id: Optional[str] = None
     begin: Optional[str] = None
@@ -43,20 +43,6 @@ class OnairSite:
     end: Optional[str] = None
     comment: Optional[str] = None
 
-
-@dataclass
-class InfoSite:
-    site: str
-    id: str
-
-
-@dataclass
-class ResourceSite:
-    site: str
-    id: str
-
-
-Site = Union[OnairSite, InfoSite, ResourceSite]
 
 
 @dataclass
@@ -73,10 +59,6 @@ class Item:
     comment: str = None
 
 
-SiteList = str
 
 
-@dataclass
-class Data:
-    siteMeta: Dict[SiteList, SiteMeta]
-    items: List[Item]
+
